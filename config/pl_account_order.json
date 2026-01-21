@@ -1,0 +1,36 @@
+{
+  "description": "P&L Account Type Ordering Configuration",
+  "note": "This file defines the order in which account types appear in P&L reports",
+  "account_type_order": [
+    {
+      "type": "REVENUE",
+      "description": "Revenue accounts - income from primary business activities",
+      "order": 1
+    },
+    {
+      "type": "DIRECTCOSTS", 
+      "description": "Direct costs - costs directly attributable to revenue generation",
+      "order": 2
+    },
+    {
+      "type": "OTHERINCOME",
+      "description": "Other income - income from non-primary business activities", 
+      "order": 3
+    },
+    {
+      "type": "EXPENSE",
+      "description": "Operating expenses - general business operating costs",
+      "order": 4
+    },
+    {
+      "type": "OVERHEADS",
+      "description": "Overhead expenses - indirect business costs",
+      "order": 5
+    }
+  ],
+  "sorting_rules": {
+    "primary": "account_type_order",
+    "secondary": "account_name_alphabetical",
+    "empty_accounts": "exclude"
+  }
+}

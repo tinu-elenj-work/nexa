@@ -1,0 +1,21 @@
+# Testing dependencies for Nexa project
+
+# Core testing framework
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+
+# Data processing and Excel handling (for tests)
+pandas==2.3.1
+openpyxl==3.1.5
+xlsxwriter==3.1.2
+
+# Mocking and test utilities
+# unittest-mock is built into Python 3.3+
+
+# Coverage reporting
+coverage==7.3.2
+
+# Additional testing utilities
+pytest-html==4.1.1
+pytest-xdist==3.3.1

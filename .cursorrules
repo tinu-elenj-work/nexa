@@ -1,0 +1,559 @@
+# Nexa - Complete Integration Suite
+# Cursor Rules and Context
+
+## Project Overview
+Nexa is a comprehensive project mapping and financial analysis tool that integrates three critical business systems:
+- **ElapseIT**: Time tracking and project management system (API integration)
+- **Vision**: Internal project management database (PostgreSQL)
+- **Xero**: Cloud-based accounting and financial management system (API integration)
+
+## Tech Stack
+- **Language**: Python 3.8+
+- **Data Processing**: Pandas, NumPy
+- **Database**: PostgreSQL (psycopg2-binary)
+- **API Integration**: requests, xero-python SDK
+- **Excel Processing**: openpyxl, xlsxwriter
+- **Authentication**: OAuth2, JWT tokens
+- **Testing**: pytest, pytest-cov
+- **Visualization**: plotly, kaleido
+
+## Project Structure
+```
+nexa/
+├── src/                         # Source code
+│   ├── project_mapper_enhanced.py    # Main Nexa application (API + CSV support)
+│   ├── elapseit_api_client.py       # ElapseIT API client
+│   ├── data_transformer.py          # API data transformation logic
+│   ├── xero_api_client.py           # Xero API client
+│   ├── vision_db_client.py          # Vision database client
+│   ├── timesheet_extractor.py       # Timesheet extraction utility
+│   ├── get_xero_reports.py          # Xero financial reports extractor
+│   ├── fx_reader.py                 # Foreign exchange rate reader
+│   ├── create_field_mappings.py     # Field mapping configuration utility
+│   ├── archive_elapseit_data.py     # Data archiving utility
+│   ├── xero_oauth_*.py              # OAuth2 setup utilities
+│   └── unit_testing/                # Debugging and unitary test scripts
+├── config/                      # Configuration files
+│   ├── config.py                    # Main configuration (with credentials)
+│   ├── config.template.py           # Configuration template
+│   ├── field_mappings.xlsx          # Field mapping configuration
+│   └── pl_account_order.json        # Account order configuration
+├── data/                        # Input data files (CSV fallbacks)
+│   ├── elapseIT_data/               # ElapseIT CSV data files
+│   ├── vision_data/                 # Vision CSV data files
+│   ├── xero_data/                   # Xero CSV data files
+│   └── fx/                          # Foreign exchange data
+├── output/                      # Generated output files
+│   ├── elapseIT_data/               # Timesheet reports
+│   ├── mapping_results/             # Project mapping analysis
+│   └── xero_data/                   # Financial reports
+├── tests/                       # Regression testing (pytest)
+│   ├── conftest.py                 # Pytest configuration and fixtures
+│   └── test_*.py                   # Individual test files
+└── requirements.txt             # Python dependencies
+```
+
+## Coding Standards
+
+### Python Style
+- Follow PEP 8 style guidelines
+- Use type hints for function parameters and return values
+- Use docstrings for all classes and functions
+- Use meaningful variable and function names
+- Prefer f-strings over .format() or % formatting
+- Use pathlib.Path for file path operations
+- Handle exceptions gracefully with specific error messages
+
+### File Organization
+- Use snake_case for file names
+- Group related functionality in modules
+- Keep configuration separate from business logic
+- Use absolute imports from project root
+- Place test files in tests/ directory with test_ prefix
+- Place debugging and unitary test scripts in src/unit_testing/ directory
+
+### Import Rules - CRITICAL
+- **NEVER use relative imports** (e.g., `from .elapseit_api_client import ElapseITAPIClient`)
+- **ALWAYS use absolute imports** from project root (e.g., `from elapseit_api_client import ElapseITAPIClient`)
+- **For files in src/ directory**: Use direct imports without dots (e.g., `from elapseit_api_client import ElapseITAPIClient`)
+- **For files in src/unit_testing/**: Add proper sys.path manipulation to access src/ modules
+- **Common mistake to avoid**: `from .elapseit_api_client` - this will cause ModuleNotFoundError
+- **Correct pattern**: `from elapseit_api_client import ElapseITAPIClient`
+
+### API Integration Patterns
+- Always use try-catch blocks for API calls
+- Implement retry logic with exponential backoff
+- Use connection pooling for database connections
+- Handle rate limiting gracefully
+- Log all API interactions for debugging
+
+### ElapseIT API Client Initialization - CRITICAL
+- **ALWAYS use the same initialization pattern as timesheet_extractor.py**
+- **NEVER use**: `ElapseITAPIClient(ELAPSEIT_CONFIG)` - this will cause TypeError
+- **ALWAYS use**: 
+  ```python
+  api_client = ElapseITAPIClient(
+      domain=ELAPSEIT_CONFIG['domain'],
+      username=ELAPSEIT_CONFIG['username'],
+      password=ELAPSEIT_CONFIG['password']
+  )
+  ```
+- **Common mistake to avoid**: Passing config dict directly to constructor
+- **Correct pattern**: Extract individual config values and pass as named parameters
+
+### Data Processing
+- Use pandas DataFrames for data manipulation
+- Validate data before processing
+- Handle missing values explicitly
+- Use appropriate data types (datetime, numeric, categorical)
+- Implement data deduplication where needed
+
+### Data Analysis Rules - CRITICAL
+- **NEVER make assumptions about data** - Always fetch actual data from the source
+- **ALWAYS verify data** - Use API calls, database queries, or file reads to get real data
+- **NEVER create fictional data** - If data is not available, state that clearly
+- **ALWAYS show data sources** - When presenting analysis, show where the data came from
+- **VERIFY calculations** - Double-check any calculations or summaries against raw data
+- **Common mistake to avoid**: Creating assumptions about dates, allocations, or work patterns
+- **Correct pattern**: Fetch data → Analyze data → Present findings with data source
+
+### Code Logic Analysis Rules - CRITICAL
+- **NEVER make assumptions or inferences about code logic** - Always examine the actual code
+- **ALWAYS read the source code** - Use read_file, grep, or codebase_search to examine actual implementation
+- **NEVER guess what code does** - If asked about logic, functionality, or behavior, examine the code first
+- **ALWAYS verify code behavior** - Run analysis scripts or trace through actual code paths
+- **VERIFY function calls** - Check what functions are actually called and what parameters are passed
+- **Common mistake to avoid**: Describing what code "should" do without checking what it actually does
+- **Correct pattern**: Read code → Trace execution → Verify behavior → Report findings
+- **Required for**: All questions about code logic, function behavior, masking rules, data processing, etc.
+
+### Error Handling
+- Use specific exception types
+- Provide meaningful error messages
+- Log errors with appropriate levels
+- Implement graceful degradation
+- Return structured error responses
+
+## Key Patterns
+
+### Configuration Management
+```python
+# Always use config/config.py for credentials
+from config import ELAPSEIT_CONFIG, XERO_CONFIG, VISION_DB_CONFIG
+
+# Use config.template.py as reference
+# Never commit actual credentials to version control
+```
+
+### API Client Pattern
+```python
+class APIClient:
+    def __init__(self, config):
+        self.config = config
+        self.session = requests.Session()
+        self._setup_auth()
+    
+    def _setup_auth(self):
+        # OAuth2 or API key setup
+        pass
+    
+    def get_data(self, endpoint):
+        try:
+            response = self.session.get(f"{self.base_url}{endpoint}")
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            logger.error(f"API call failed: {e}")
+            raise
+```
+
+### Data Transformation Pattern
+```python
+def transform_data(raw_data):
+    """Transform API data to standardized format"""
+    df = pd.DataFrame(raw_data)
+    
+    # Data validation
+    if df.empty:
+        raise ValueError("No data received")
+    
+    # Data cleaning
+    df = df.drop_duplicates()
+    df = df.dropna(subset=['required_field'])
+    
+    # Data transformation
+    df['processed_field'] = df['raw_field'].apply(transform_function)
+    
+    return df
+```
+
+### Testing Pattern
+```python
+import pytest
+from unittest.mock import Mock, patch
+
+class TestAPIClient:
+    def test_successful_request(self, mock_session):
+        # Arrange
+        mock_response = Mock()
+        mock_response.json.return_value = {"data": "test"}
+        mock_session.get.return_value = mock_response
+        
+        # Act
+        result = api_client.get_data("/test")
+        
+        # Assert
+        assert result == {"data": "test"}
+```
+
+## Common Tasks
+
+### Adding New API Integration
+1. Create new client class in src/
+2. Add configuration to config.template.py
+3. Implement error handling and retry logic
+4. Add comprehensive tests
+5. Update main application to use new client
+
+### Adding New Data Processing
+1. Create transformation functions
+2. Add data validation
+3. Implement error handling
+4. Add unit tests
+5. Update main processing pipeline
+
+### Adding New Report Generation
+1. Create report generation function
+2. Use xlsxwriter for Excel formatting
+3. Add multiple sheets for different views
+4. Implement archiving
+5. Add tests for report content
+
+### Excel Output Standards - CRITICAL
+- **Column Auto-sizing**: ALL Excel output files MUST have auto-sized columns for optimal readability
+- **Consistent Formatting**: Use consistent formatting across all sheets in the same workbook
+- **Header Styling**: Apply bold formatting to all header rows
+- **Data Types**: Ensure proper data types are preserved (dates, numbers, text)
+- **Sheet Organization**: Use descriptive sheet names and logical ordering
+- **Implementation Pattern**:
+  ```python
+  def format_excel_sheet(worksheet, df):
+      """Format Excel sheet with auto-sized columns and proper styling"""
+      # Auto-size all columns
+      for column in worksheet.columns:
+          max_length = 0
+          column_letter = column[0].column_letter
+          for cell in column:
+              try:
+                  if len(str(cell.value)) > max_length:
+                      max_length = len(str(cell.value))
+              except:
+                  pass
+          adjusted_width = min(max_length + 2, 50)  # Cap at 50 characters
+          worksheet.column_dimensions[column_letter].width = adjusted_width
+      
+      # Format header row
+      for cell in worksheet[1]:
+          cell.font = Font(bold=True)
+          cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+  ```
+- **Required for ALL Excel outputs**: Project mapping analysis, Xero reports, timesheet reports
+- **Never create Excel files without proper column formatting**
+
+## Testing Guidelines
+
+### Test Structure
+- Use pytest as testing framework
+- Place regression tests in tests/ directory
+- Place debugging and unitary test scripts in src/unit_testing/ directory
+- Use descriptive test names
+- Group related tests in classes
+- Use fixtures for common setup
+
+### Test Coverage
+- Aim for 90%+ code coverage
+- Test all API integrations
+- Test data transformation logic
+- Test error handling paths
+- Test report generation
+
+### Running Tests
+```bash
+# Run regression tests
+python run_tests.py
+
+# Run with coverage
+python run_tests.py --coverage
+
+# Run specific test file
+python run_tests.py --specific test_api_clients.py
+```
+
+## Security Guidelines
+
+### Credential Management
+- Never commit credentials to version control
+- Use config.template.py for setup guidance
+- Store sensitive data in config/config.py
+- Use environment variables when possible
+- Implement secure token storage
+
+### Git Configuration
+- **Output Directory**: All files in `output/` are ignored by git
+- **Generated Files**: Excel reports, archives, and temporary files are not committed
+- **Directory Structure**: `.gitkeep` files maintain directory structure
+- **Debug Files**: All debugging scripts in `src/unit_testing/` are ignored
+- **Credentials**: `config/config.py` is committed (development setup)
+
+### API Security
+- Use HTTPS for all API communications
+- Implement proper OAuth2 flow
+- Handle token refresh automatically
+- Log security events
+- Validate all input data
+
+### Color Scheme Guidelines
+- **Centralized Colors**: Always use `config/color_scheme.py` for all dashboard colors
+- **Consistency**: Use the same color for the same category across all dashboards
+- **Category Colors**: 
+  - LEAVE: Red (#DC2626) - Leave/vacation days
+  - INTERNAL: Blue (#2563EB) - Internal project work
+  - OTHER: Gray (#6B7280) - Other/uncategorized work
+  - TOTAL: Green (#059669) - Total days/overall metrics
+  - EMPLOYEE_COUNT: Green (#10B981) - Employee count metrics
+- **Chart Elements**:
+  - UPPER_BOUND/LOWER_BOUND: Red (#DC2626) - Reference lines
+  - MEAN_LINE: Green (#10B981) - Mean reference lines
+  - MEDIAN_LINE: Orange (#F59E0B) - Median reference lines
+  - OUTLIER_MARKER: Yellow (#FCD34D) - Outlier data points
+- **Usage Pattern**:
+  ```python
+  from config.color_scheme import get_category_color, get_chart_color
+  marker_color=get_category_color('LEAVE')  # Not hardcoded 'red'
+  line_color=get_chart_color('UPPER_BOUND')  # Not hardcoded '#DC2626'
+  ```
+- **Never hardcode colors** - Always use the centralized functions
+- **Test consistency** - Run `python src/unit_testing/test_color_consistency.py` to verify
+
+## Performance Guidelines
+
+### Data Processing
+- Use pandas for efficient data manipulation
+- Implement data chunking for large datasets
+- Use appropriate data types
+- Cache frequently accessed data
+- Optimize database queries
+
+### API Calls
+- Implement connection pooling
+- Use async requests where appropriate
+- Implement proper rate limiting
+- Cache API responses when possible
+- Monitor API usage
+
+## Common Commands
+
+### Setup
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Setup configuration
+cp config/config.template.py config/config.py
+# Edit config/config.py with your credentials
+
+# Run OAuth2 setup for Xero
+python src/xero_oauth_server.py
+```
+
+### Main Operations
+```bash
+# Run project mapping analysis
+python src/project_mapper_enhanced.py --api --month "August 2025"
+
+# Extract Xero financial reports
+python src/get_xero_reports.py "June 2025"
+
+# Extract timesheet data
+python src/timesheet_extractor.py
+```
+
+### Testing
+```bash
+# Run regression tests
+python run_tests.py
+
+# Run with coverage
+python run_tests.py --coverage
+```
+
+## Debugging Tips
+
+### Common Issues
+- Check API credentials in config/config.py
+- Verify network connectivity
+- Check file permissions for output directory
+- Review logs for specific error messages
+- Test individual components separately
+
+### Debug Mode
+- Use --debug flag for verbose output
+- Enable detailed logging
+- Test with small datasets first
+- Use mock data for development
+
+## File Naming Conventions
+
+### Source Files
+- Use snake_case: `elapseit_api_client.py`
+- Be descriptive: `data_transformer.py`
+- Group by functionality: `xero_oauth_*.py`
+
+### Test Files
+- Regression tests: `tests/test_*.py`
+- Debugging/unitary tests: `src/unit_testing/debug_*.py` or `src/unit_testing/test_*.py`
+- Use descriptive names: `debug_aaisha_leave_calculation.py`
+
+### Configuration Files
+- Use descriptive names: `field_mappings.xlsx`
+- Include version info: `pl_account_order.json`
+- Use templates: `config.template.py`
+
+## Documentation Standards
+
+### Code Documentation
+- Use docstrings for all functions and classes
+- Include parameter descriptions
+- Document return values
+- Add usage examples
+- Include error conditions
+
+### README Files
+- Keep README.md up to date
+- Include setup instructions
+- Document all commands
+- Add troubleshooting section
+- Include examples
+
+## Integration Points
+
+### ElapseIT Integration
+- OAuth2 authentication
+- Real-time API access
+- Data types: clients, people, projects, allocations
+- Timezone handling
+- Error handling and retry logic
+
+### Xero Integration
+- OAuth2 with refresh tokens
+- Financial reports: Balance Sheet, P&L, Trial Balance
+- Multi-currency support
+- Invoice management
+- Multi-tenant support
+
+### Vision Database Integration
+- PostgreSQL connectivity
+- Read-only access
+- Connection pooling
+- Query optimization
+- Error recovery
+
+## Data Flow
+
+### Project Analysis Flow
+1. API Data Retrieval → Data Transformation → Vision Data Loading
+2. Data Processing → Matching Analysis → Report Generation
+
+### Financial Flow
+1. Authentication → Report Generation → Multi-Currency Processing
+2. Data Transformation → Archive Management → Excel Export
+
+### Timesheet Flow
+1. Date Range Processing → API Data Retrieval → Data Aggregation
+2. Excel Generation → Archive Management
+
+## Best Practices
+
+### Code Quality
+- Write clean, readable code
+- Use meaningful variable names
+- Implement proper error handling
+- Add comprehensive tests
+- Document complex logic
+
+### Performance
+- Optimize for large datasets
+- Use efficient data structures
+- Implement caching where appropriate
+- Monitor memory usage
+- Profile slow operations
+
+### Maintenance
+- Keep dependencies updated
+- Regular code reviews
+- Monitor error logs
+- Update documentation
+- Refactor when needed
+
+## Troubleshooting
+
+### Common Problems
+- API authentication failures
+- Database connection issues
+- File permission errors
+- Memory issues with large datasets
+- Excel file generation problems
+
+### Solutions
+- Check credentials and network
+- Verify database configuration
+- Check file permissions
+- Use data chunking
+- Update Excel libraries
+
+## Documentation and Context Update Rules - CRITICAL
+
+### Requirement Confirmation Process
+- **NEVER update documentation or cursor context immediately** when new requirements are identified
+- **ALWAYS wait for explicit confirmation** from the user before making any documentation changes
+- **ONLY update** `.cursorrules`, README files, or other documentation **after receiving confirmation**
+- **Common mistake to avoid**: Automatically updating documentation when requirements are discovered
+- **Correct pattern**: 
+  1. Identify new requirement
+  2. Present the requirement to user
+  3. Wait for user confirmation
+  4. Only then update relevant documentation
+
+### Documentation Update Triggers
+- New coding standards or patterns discovered
+- New project structure changes
+- New integration requirements
+- New testing requirements
+- New security requirements
+- New performance requirements
+
+### Update Process
+1. **Identify**: New requirement or pattern emerges during development
+2. **Present**: Clearly explain what needs to be documented
+3. **Wait**: Do not make changes until user confirms
+4. **Update**: Only after explicit confirmation, update relevant files:
+   - `.cursorrules` for coding standards and patterns
+   - `README.md` for project overview and setup
+   - Other relevant documentation files
+
+### Example Workflow
+```
+User: "I need to add a new API integration"
+Assistant: "I can help with that. I've identified that this will require:
+- New API client class
+- New configuration section
+- New testing patterns
+- New documentation
+
+Should I update the cursor rules and documentation to include these new requirements?"
+
+User: "Yes, go ahead"
+Assistant: [Updates documentation]
+```
+
+Remember: This is a production system handling sensitive business data. Always prioritize security, reliability, and data accuracy in all implementations.

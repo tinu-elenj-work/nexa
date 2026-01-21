@@ -1,0 +1,32 @@
+# Nexa Project Dependencies
+
+# Core API and HTTP libraries
+requests==2.32.3
+python-dotenv==1.0.1
+
+# Data processing and Excel handling
+pandas==2.3.1
+openpyxl==3.1.5
+xlsxwriter==3.1.2
+
+# Database connectivity
+psycopg2-binary==2.9.10
+
+# Date/time handling
+python-dateutil==2.9.0.post0
+
+# Windows-specific (for Excel automation)
+pywin32==311
+
+# Visualization
+plotly==5.17.0
+kaleido==0.2.1
+
+# Xero Python SDK
+xero-python==4.0.0
+
+# SSL certificates
+certifi==2025.1.31
+
+# Additional dependencies
+urllib3==2.3.0
