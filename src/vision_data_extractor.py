@@ -642,11 +642,29 @@ def extract_vision_data(simulation_id=None, output_filename=None, mask_data=Fals
 
         # Build column metadata for import guidance
         column_metadata_df = build_column_metadata(client, tables_data)
-        
+
+        # Create extraction metadata
+        extraction_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        extraction_metadata = pd.DataFrame([
+            {"Property": "Extraction Date/Time", "Value": extraction_timestamp},
+            {"Property": "Source", "Value": "Vision Database"},
+            {"Property": "Simulation ID", "Value": simulation_id},
+            {"Property": "Data Masking", "Value": "Enabled" if mask_data else "Disabled"},
+            {"Property": "Total Tables", "Value": len(tables_data)},
+            {"Property": "Total Records", "Value": sum(len(df) for df in tables_data.values())},
+            {"Property": "Output File", "Value": os.path.basename(output_filename)}
+        ])
+
         # Create Excel file with multiple sheets - EXACT SAME PROCESS as original
         print("📊 Creating Excel file...")
         with pd.ExcelWriter(output_filename, engine="openpyxl") as writer:
-            # Write column metadata first
+            # Write extraction metadata first
+            extraction_metadata.to_excel(writer, sheet_name="Extraction_Metadata", index=False)
+            worksheet = writer.sheets["Extraction_Metadata"]
+            format_excel_sheet(worksheet, extraction_metadata)
+            print("   📋 Created 'Extraction_Metadata' sheet with run information")
+
+            # Write column metadata second
             if not column_metadata_df.empty:
                 column_metadata_df.to_excel(writer, sheet_name="column_metadata", index=False)
                 worksheet = writer.sheets["column_metadata"]

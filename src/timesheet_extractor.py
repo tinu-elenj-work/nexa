@@ -43,6 +43,13 @@ from config.color_scheme import (
     CATEGORY_COLORS, CHART_COLORS
 )
 
+# Fix Windows console encoding so emoji/Unicode print without crashing
+if sys.platform == 'win32':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 
 class ElapseITTimesheetExtractor:
     """Extract timesheet data from ElapseIT API and generate Excel reports."""
