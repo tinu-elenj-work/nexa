@@ -47,6 +47,13 @@ python src/timesheet_extractor.py
 
 # Archive old ElapseIT data
 python src/archive_elapseit_data.py
+
+# Extract Vision database data
+python src/vision_data_extractor.py --mask
+python src/vision_data_extractor.py --no-mask  # Extract without masking
+
+# Extract Vision data with enhanced configuration
+python src/extract_vision_data_enhanced.py --mask
 ```
 
 ### Testing
@@ -201,10 +208,11 @@ python src/unit_testing/test_color_consistency.py
 - Target: 90%+ code coverage
 
 ### Debug/Unit Tests (`src/unit_testing/`)
-- Development and debugging scripts
-- Single-purpose test scripts for specific scenarios
-- Not tracked in git (directory is git-ignored)
-- Used for investigating specific issues
+- Development and debugging scripts (not production tests)
+- Single-purpose investigation scripts for specific scenarios
+- Files in this directory ARE tracked in git (unlike typical debug directories)
+- Used for data validation, column checks, and ad-hoc analysis
+- Examples: check_vision_tables.py, verify_cost_to_company_masking.py
 
 ## Output Files Structure
 
@@ -215,6 +223,8 @@ output/
 ├── elapseIT_data/          # Timesheet reports
 │   ├── timesheets_*.xlsx
 │   └── archive/            # Archived timesheets
+├── vision_data/            # Vision database exports
+│   └── vision_extract_*.xlsx
 └── xero_data/              # Financial reports
     ├── balance_sheet_*.xlsx
     ├── profit_and_loss_*.xlsx
