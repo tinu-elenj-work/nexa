@@ -534,8 +534,11 @@ def extract_vision_data(simulation_id=None, output_filename=None, mask_data=Fals
         if output_filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             suffix = "_MASKED" if mask_data else ""
-            output_filename = f"../output/vision_data/vision_extract_sim{simulation_id}_{timestamp}{suffix}.xlsx"
-        
+            # Get the project root directory (parent of src/)
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(script_dir)
+            output_filename = os.path.join(project_root, "output", "vision_data", f"vision_extract_sim{simulation_id}_{timestamp}{suffix}.xlsx")
+
         # Ensure output directory exists
         output_dir = os.path.dirname(output_filename)
         if output_dir:  # Only create directory if there's a path component
