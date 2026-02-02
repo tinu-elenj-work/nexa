@@ -103,16 +103,16 @@ def mask_projects_data(df):
     """Mask project amounts for fixed-type projects - preserves exact structure"""
     if df.empty:
         return df
-    
+
     df_masked = df.copy()
-    
+
     # Check if Type column exists and has fixed projects
     if "type" in df_masked.columns:
         fixed_projects = df_masked[df_masked["type"] == "fixed"]
-        
+
         if not fixed_projects.empty:
-            # Look for amount-related columns
-            amount_columns = [col for col in df_masked.columns if any(keyword in col.lower() for keyword in ["amount", "value", "budget", "cost", "price"])]
+            # Look for amount-related columns (including rate for fixed projects)
+            amount_columns = [col for col in df_masked.columns if any(keyword in col.lower() for keyword in ["amount", "value", "budget", "cost", "price", "rate"]) and "type" not in col.lower()]
             
             if amount_columns:
                 for col in amount_columns:
@@ -172,11 +172,11 @@ def mask_salaries_data(df):
     """Mask salary amounts with random values - preserves exact structure"""
     if df.empty:
         return df
-    
+
     df_masked = df.copy()
-    
+
     # Look for salary amount columns
-    salary_columns = [col for col in df_masked.columns if any(keyword in col.lower() for keyword in ["salary", "overtime", "allowance", "bonus", "payment", "loan"])]
+    salary_columns = [col for col in df_masked.columns if any(keyword in col.lower() for keyword in ["salary", "overtime", "allowance", "bonus", "payment", "loan", "cost"])]
     
     if salary_columns:
         for col in salary_columns:
@@ -750,9 +750,11 @@ Data Masking Rules:
   - Clients: Names replaced with short company codes (special characters removed)
   - Projects: Names replaced with fake project names (special characters removed)
   - Project Numbers: Blanked out (empty) in all tables
-  - Allocations: Employee/Project/Client names kept consistent with source tables
-  - Financial data: Rate values randomized (Rate Type preserved as categorical data)
+  - Project Amounts: Rate values for fixed-type projects randomized (100,000 - 200,000)
+  - Allocations: Rate values randomized (100,000 - 200,000); names inherited from source tables
+  - Salaries: cost_to_company and salary columns randomized (30,000 - 150,000)
   - All foreign key relationships and computed fields preserved
+  - Categorical fields (rate_type, status, type, etc.) preserved
         """
     )
     
