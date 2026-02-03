@@ -5,21 +5,30 @@ A comprehensive project mapping and financial analysis tool that integrates Elap
 ## 🚀 Quick Start
 
 ```bash
+# IMPORTANT: This system uses an externally managed Python environment (PEP 668)
+# Always use the virtual environment for all operations
+
+# Create virtual environment (if not exists)
+python3 -m venv venv
+
 # Install dependencies
-pip install -r requirements.txt
+venv/bin/pip install -r requirements.txt
 
 # Setup configuration
 cp config/config.template.py config/config.py
 # Edit config/config.py with your credentials
 
+# Setup Xero OAuth2 authentication
+venv/bin/python src/xero_oauth_server.py
+
 # Run main Nexa application (API mode)
-python src/project_mapper_enhanced.py --api --month "August 2025"
+venv/bin/python src/project_mapper_enhanced.py --api --month "August 2025"
 
 # Extract Xero financial reports
-python src/get_xero_reports.py "June 2025"
+venv/bin/python src/get_xero_reports.py "June 2025"
 
-# Extract timesheet data
-python src/timesheet_extractor.py
+# Extract timesheet data (with date range)
+venv/bin/python src/timesheet_extractor.py --start-date 2025-03-01 --end-date 2026-01-31
 ```
 
 ## 🌟 Key Features
@@ -167,7 +176,7 @@ For Xero API access, you need to complete OAuth2 authentication:
 
 #### Automated OAuth2 Setup (Recommended)
 ```bash
-python src/xero_oauth_server.py
+venv/bin/python src/xero_oauth_server.py
 ```
 This will:
 - Start a local server on port 8080
@@ -178,14 +187,14 @@ This will:
 
 #### Manual OAuth2 Setup
 ```bash
-python src/xero_oauth_manual.py
+venv/bin/python src/xero_oauth_manual.py
 ```
 This provides step-by-step instructions for manual token setup.
 
 ### 3. Field Mappings
 Run the field mapping utility to generate configuration files:
 ```bash
-python src/create_field_mappings.py
+venv/bin/python src/create_field_mappings.py
 ```
 
 ## 📊 Usage Examples
@@ -194,36 +203,36 @@ python src/create_field_mappings.py
 
 #### Basic API Analysis
 ```bash
-python src/project_mapper_enhanced.py --api --month "August 2025"
+venv/bin/python src/project_mapper_enhanced.py --api --month "August 2025"
 ```
 
 #### Employee-Specific Analysis
 ```bash
-python src/project_mapper_enhanced.py --api --month "August 2025" --employee "John Smith"
+venv/bin/python src/project_mapper_enhanced.py --api --month "August 2025" --employee "John Smith"
 ```
 
 #### Debug Mode (no Excel output)
 ```bash
-python src/project_mapper_enhanced.py --api --month "August 2025" --debug
+venv/bin/python src/project_mapper_enhanced.py --api --month "August 2025" --debug
 ```
 
 #### Fallback to CSV Files
 ```bash
-python src/project_mapper_enhanced.py --month "August 2025"
+venv/bin/python src/project_mapper_enhanced.py --month "August 2025"
 ```
 
 ### 💰 Xero Financial Reports
 
 #### Extract Reports for Specific Date
 ```bash
-python src/get_xero_reports.py "June 2025"
-python src/get_xero_reports.py "2025-06-30"
-python src/get_xero_reports.py "31 December 2024"
+venv/bin/python src/get_xero_reports.py "June 2025"
+venv/bin/python src/get_xero_reports.py "2025-06-30"
+venv/bin/python src/get_xero_reports.py "31 December 2024"
 ```
 
 #### Extract Reports for Today
 ```bash
-python src/get_xero_reports.py
+venv/bin/python src/get_xero_reports.py
 ```
 
 #### Available Report Types
@@ -235,22 +244,30 @@ python src/get_xero_reports.py
 
 ### 📈 Timesheet Extraction
 
-#### Extract Timesheet Data
+#### Extract Timesheet Data (with date range)
 ```bash
-python src/timesheet_extractor.py
+# Extract for specific date range
+venv/bin/python src/timesheet_extractor.py --start-date 2025-03-01 --end-date 2026-01-31
+
+# Short form
+venv/bin/python src/timesheet_extractor.py -s 2025-03-01 -e 2026-01-31
+
+# Interactive mode
+venv/bin/python src/timesheet_extractor.py --interactive
 ```
 
 #### Features
-- Dynamic date range specification
+- Dynamic date range specification (YYYY-MM-DD format)
 - Excel output with multiple sheets:
   - Grouping by Client → Allocation → Resource (by month)
   - Grouping by Resource → Client → Allocation (by month)
+- Interactive charts and dashboards
 
 ### 🔄 Data Archiving
 
 #### Archive ElapseIT Data
 ```bash
-python src/archive_elapseit_data.py
+venv/bin/python src/archive_elapseit_data.py
 ```
 
 ## 📈 Output Files
@@ -306,12 +323,15 @@ The project includes comprehensive testing capabilities:
 ### Running Tests
 ```bash
 # Run all tests
-python run_tests.py
+venv/bin/python run_tests.py
+
+# Run with coverage
+venv/bin/python run_tests.py --coverage
 
 # Run specific test categories
-pytest tests/test_api_clients.py
-pytest tests/test_data_transformers.py
-pytest tests/test_main_applications.py
+venv/bin/pytest tests/test_api_clients.py -v
+venv/bin/pytest tests/test_data_transformers.py -v
+venv/bin/pytest tests/test_main_applications.py -v
 ```
 
 ### Test Coverage
@@ -383,10 +403,12 @@ This project is ready for deployment to Bitbucket:
 
 ### Deployment Steps
 1. **Clone the repository**
-2. **Install dependencies**: `pip install -r requirements.txt`
-3. **Setup configuration**: Copy `config/config.template.py` to `config/config.py` and configure
-4. **Test connections**: Run individual modules to verify API connections
-5. **Run the application**: `python src/project_mapper_enhanced.py --api --month "August 2025"`
+2. **Create virtual environment**: `python3 -m venv venv`
+3. **Install dependencies**: `venv/bin/pip install -r requirements.txt`
+4. **Setup configuration**: Copy `config/config.template.py` to `config/config.py` and configure
+5. **Setup Xero OAuth**: `venv/bin/python src/xero_oauth_server.py`
+6. **Test connections**: Run individual modules to verify API connections
+7. **Run the application**: `venv/bin/python src/project_mapper_enhanced.py --api --month "August 2025"`
 
 ### Environment Setup
 ```bash

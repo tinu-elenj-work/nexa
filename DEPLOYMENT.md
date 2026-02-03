@@ -8,18 +8,25 @@
 - Bitbucket account
 - API credentials for all integrated systems
 
+**IMPORTANT**: This system uses an externally managed Python environment (PEP 668). Always use the virtual environment for all operations.
+
 ### 1. Clone the Repository
 ```bash
 git clone https://bitbucket.org/elenj/workspace/projects/ESBUS/nexa.git
 cd nexa
 ```
 
-### 2. Install Dependencies
+### 2. Create Virtual Environment
 ```bash
-pip install -r requirements.txt
+python3 -m venv venv
 ```
 
-### 3. Setup Configuration
+### 3. Install Dependencies
+```bash
+venv/bin/pip install -r requirements.txt
+```
+
+### 4. Setup Configuration
 ```bash
 # Copy configuration template
 cp config/config.template.py config/config.py
@@ -28,22 +35,22 @@ cp config/config.template.py config/config.py
 # Edit config/config.py with your actual API credentials
 ```
 
-### 4. Setup Xero OAuth2 (Required)
+### 5. Setup Xero OAuth2 (Required)
 ```bash
 # Run automated OAuth2 setup
-python src/xero_oauth_server.py
+venv/bin/python src/xero_oauth_server.py
 ```
 
-### 5. Test the System
+### 6. Test the System
 ```bash
-# Test ElapseIT integration
-python src/timesheet_extractor.py
+# Test ElapseIT integration with date range
+venv/bin/python src/timesheet_extractor.py --start-date 2025-03-01 --end-date 2026-01-31
 
-# Test Xero integration  
-python src/get_xero_reports.py "June 2025"
+# Test Xero integration
+venv/bin/python src/get_xero_reports.py "June 2025"
 
 # Test main analysis
-python src/project_mapper_enhanced.py --api --month "August 2025"
+venv/bin/python src/project_mapper_enhanced.py --api --month "August 2025"
 ```
 
 ## 🔧 Configuration
@@ -86,29 +93,36 @@ VISION_DB_CONFIG = {
 
 ### Generate Project Mapping Analysis
 ```bash
-python src/project_mapper_enhanced.py --api --month "August 2025"
+venv/bin/python src/project_mapper_enhanced.py --api --month "August 2025"
 ```
 
 ### Extract Timesheet Data
 ```bash
-python src/timesheet_extractor.py
+# With date range
+venv/bin/python src/timesheet_extractor.py --start-date 2025-03-01 --end-date 2026-01-31
+
+# Interactive mode
+venv/bin/python src/timesheet_extractor.py --interactive
 ```
 
 ### Generate Xero Financial Reports
 ```bash
-python src/get_xero_reports.py "June 2025"
+venv/bin/python src/get_xero_reports.py "June 2025"
 ```
 
 ## 🧪 Testing
 
 ### Run Integration Tests
 ```bash
-python -m pytest tests/test_integration_with_real_data.py -v
+venv/bin/pytest tests/test_integration_with_real_data.py -v
 ```
 
 ### Run All Tests
 ```bash
-python run_tests.py
+venv/bin/python run_tests.py
+
+# Run with coverage
+venv/bin/python run_tests.py --coverage
 ```
 
 ## 📁 Output Files
@@ -132,7 +146,8 @@ All generated files are saved to the `output/` directory:
 1. **Import Errors**: Make sure you're in the project root directory
 2. **API Authentication**: Verify credentials in `config/config.py`
 3. **Database Connection**: Check Vision database credentials and network access
-4. **OAuth2 Issues**: Re-run `python src/xero_oauth_server.py`
+4. **OAuth2 Issues**: Re-run `venv/bin/python src/xero_oauth_server.py`
+5. **Virtual Environment**: Always use `venv/bin/python` for all commands
 
 ### Getting Help
 

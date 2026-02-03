@@ -136,7 +136,7 @@ color3 = get_palette_color(2)  # Green
 Run the color consistency test to verify all colors are working correctly:
 
 ```bash
-python src/unit_testing/test_color_consistency.py
+venv/bin/python src/unit_testing/test_color_consistency.py
 ```
 
 ## Adding New Colors

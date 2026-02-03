@@ -114,24 +114,26 @@ Create end-to-end tests that verify the complete workflow from API calls to Exce
 
 ## 🛠️ **How to Run Tests**
 
+**IMPORTANT**: Always use the virtual environment for running tests.
+
 ### **Run All Tests**
 ```bash
-python run_tests.py --verbose
+venv/bin/python run_tests.py --verbose
 ```
 
 ### **Run Specific Test File**
 ```bash
-python run_tests.py --specific test_config.py
+venv/bin/python run_tests.py --specific test_config.py
 ```
 
 ### **Run with Coverage**
 ```bash
-python run_tests.py --coverage
+venv/bin/python run_tests.py --coverage
 ```
 
 ### **Run Individual Test**
 ```bash
-python -m pytest tests/test_config.py -v
+venv/bin/pytest tests/test_config.py -v
 ```
 
 ## 📋 **Test Quality Metrics**
