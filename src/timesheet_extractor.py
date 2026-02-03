@@ -64,9 +64,13 @@ class ElapseITTimesheetExtractor:
             timezone=ELAPSEIT_CONFIG['timezone']
         )
         
+        # Get project root directory (parent of src/)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(script_dir)
+
         # Create directories
-        self.data_dir = "../output/elapseIT_data"
-        self.archive_dir = "../output/elapseIT_data/archive"
+        self.data_dir = os.path.join(project_root, "output", "elapseIT_data")
+        self.archive_dir = os.path.join(project_root, "output", "elapseIT_data", "archive")
         os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.archive_dir, exist_ok=True)
         
@@ -1918,7 +1922,7 @@ class ElapseITTimesheetExtractor:
             monthly_charts, _ = self.create_interactive_dashboard(resource_df, monthly_employee_data, stats_dict, output_filename)
             
             print(f"🎉 Timesheet extraction completed successfully!")
-            print(f"📁 Excel output: ../output/elapseIT_data/{output_filename}")
+            print(f"📁 Excel output: {os.path.join(self.data_dir, output_filename)}")
             print(f"📈 Resource-grouped sheet: {len(resource_df)} rows")
             if monthly_charts:
                 print(f"📊 Interactive charts: {monthly_charts} monthly charts + overview dashboard")

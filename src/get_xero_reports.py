@@ -27,6 +27,13 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from config import XERO_CONFIG
 
+# Get project root directory for absolute paths
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+CONFIG_PATH = os.path.join(PROJECT_ROOT, 'config', 'config.py')
+OUTPUT_DIR = os.path.join(PROJECT_ROOT, 'output', 'xero_data')
+ARCHIVE_DIR = os.path.join(PROJECT_ROOT, 'output', 'xero_data', 'archive')
+
 # Company code mapping - add new companies as needed
 COMPANY_CODES = {
     'Elenjical Solutions (Pty) Ltd': 'SA',
@@ -227,13 +234,13 @@ def create_archive_filename(report_type, target_date, timestamp=None, company_co
 
 def move_to_archive(filename):
     """Move file to archive directory (automatic archiving)"""
-    
-    source_path = f'../../output/xero_data/{filename}'
-    archive_path = f'../../output/xero_data/archive/{filename}'
-    
+
+    source_path = os.path.join(OUTPUT_DIR, filename)
+    archive_path = os.path.join(ARCHIVE_DIR, filename)
+
     try:
         # Create archive directory if it doesn't exist
-        os.makedirs('../output/xero_data/archive', exist_ok=True)
+        os.makedirs(ARCHIVE_DIR, exist_ok=True)
         
         if os.path.exists(source_path):
             os.rename(source_path, archive_path)
@@ -276,7 +283,7 @@ def setup_xero_client():
             
             # Update config.py with new tokens
             try:
-                with open('../config/config.py', 'r', encoding='utf-8') as f:
+                with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
                     config_content = f.read()
                 
                 # Update access_token and refresh_token in the file
@@ -292,7 +299,7 @@ def setup_xero_client():
                 )
                 
                 # Write updated config back to file
-                with open('../config/config.py', 'w', encoding='utf-8') as f:
+                with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
                     f.write(config_content)
                 
                 # Update the XERO_CONFIG dict in memory
@@ -342,7 +349,7 @@ def setup_xero_client():
         # Automatically update config.py with new tokens
         try:
             # Read current config file
-            with open('../config/config.py', 'r', encoding='utf-8') as f:
+            with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
                 config_content = f.read()
             
             # Update access_token and refresh_token in the file
@@ -361,7 +368,7 @@ def setup_xero_client():
                 )
             
             # Write updated config back
-            with open('../config/config.py', 'w', encoding='utf-8') as f:
+            with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
                 f.write(config_content)
                 
             print(f"🔄 Token automatically refreshed and saved - expires in {token.get('expires_in', 'unknown')} seconds")
@@ -1524,8 +1531,8 @@ def generate_reports_single_company(target_date, run_timestamp, skip_archiving=F
     print("=" * 70)
     
     # Create output directories
-    os.makedirs('../output/xero_data', exist_ok=True)
-    os.makedirs('../output/xero_data/archive', exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs(ARCHIVE_DIR, exist_ok=True)
     
     # STEP 1: Archive any existing old files first (only if not skipping)
     if not skip_archiving:
@@ -1533,7 +1540,7 @@ def generate_reports_single_company(target_date, run_timestamp, skip_archiving=F
         print("-" * 50)
         
         import glob
-        existing_files = glob.glob('../output/xero_data/*.xlsx') + glob.glob('../output/xero_data/*.csv')
+        existing_files = glob.glob(os.path.join(OUTPUT_DIR, '*.xlsx')) + glob.glob(os.path.join(OUTPUT_DIR, '*.csv'))
         archived_old_files = 0
         
         for filepath in existing_files:
@@ -1546,7 +1553,7 @@ def generate_reports_single_company(target_date, run_timestamp, skip_archiving=F
                 # Move existing file to archive with timestamp
                 timestamp_str = datetime.now().strftime("%H%M%S")
                 archive_name = f"archive_{timestamp_str}_{filename}"
-                archive_path = f'../output/xero_data/archive/{archive_name}'
+                archive_path = os.path.join(ARCHIVE_DIR, archive_name)
                 
                 os.rename(filepath, archive_path)
                 print(f"Archived existing file: {filename} -> {archive_name}")
@@ -1672,7 +1679,7 @@ def generate_reports_single_company(target_date, run_timestamp, skip_archiving=F
             sheet_name = create_sheet_name('balance_sheet', target_date, company_code)
             
             # Export with centralized formatting
-            export_to_excel_with_formatting(df_bs[export_columns], f'../output/xero_data/{filename}', sheet_name, 'financial')
+            export_to_excel_with_formatting(df_bs[export_columns], os.path.join(OUTPUT_DIR, filename), sheet_name, 'financial')
             generated_files.append(filename)
             
             # Show summary for each month and YTD
@@ -1716,7 +1723,7 @@ def generate_reports_single_company(target_date, run_timestamp, skip_archiving=F
             sheet_name = create_sheet_name('profit_and_loss', target_date, company_code)
             
             # Export with centralized formatting for monthly P&L
-            export_to_excel_with_formatting(df_monthly_pnl[export_columns], f'../output/xero_data/{filename}', sheet_name, 'financial')
+            export_to_excel_with_formatting(df_monthly_pnl[export_columns], os.path.join(OUTPUT_DIR, filename), sheet_name, 'financial')
             generated_files.append(filename)
             
             # Show summary for each month and YTD
@@ -1769,7 +1776,7 @@ def generate_reports_single_company(target_date, run_timestamp, skip_archiving=F
             sheet_name = create_sheet_name('trial_balance', target_date, company_code)
             
             # Export with centralized formatting
-            export_to_excel_with_formatting(df_tb[export_columns], f'../output/xero_data/{filename}', sheet_name, 'financial')
+            export_to_excel_with_formatting(df_tb[export_columns], os.path.join(OUTPUT_DIR, filename), sheet_name, 'financial')
             generated_files.append(filename)
             
             # Show summary for each month and YTD
@@ -1820,7 +1827,7 @@ def generate_reports_single_company(target_date, run_timestamp, skip_archiving=F
                 df_accounts = pd.DataFrame(accounts)
                 export_columns = ['code', 'name', 'type', 'tax_type', 'status', 'description', 'class', 'system_account', 'reporting_code', 'reporting_code_name']
                 sheet_name = create_sheet_name('chart_of_accounts', target_date, company_code)
-                export_to_excel_with_formatting(df_accounts[export_columns], f'../output/xero_data/{filename}', sheet_name, 'general')
+                export_to_excel_with_formatting(df_accounts[export_columns], os.path.join(OUTPUT_DIR, filename), sheet_name, 'general')
                 generated_files.append(filename)
                 
                 # Analyze account types
@@ -1868,7 +1875,7 @@ def generate_reports_single_company(target_date, run_timestamp, skip_archiving=F
             sheet_name = create_sheet_name('invoices', target_date, company_code)
             
             # Export with centralized formatting for invoices
-            export_to_excel_with_formatting(df_invoices[export_columns], f'../output/xero_data/{filename}', sheet_name, 'invoices')
+            export_to_excel_with_formatting(df_invoices[export_columns], os.path.join(OUTPUT_DIR, filename), sheet_name, 'invoices')
             generated_files.append(filename)
             
             # Calculate summary statistics
@@ -1915,7 +1922,7 @@ def generate_reports_single_company(target_date, run_timestamp, skip_archiving=F
     print(f"Timestamp: {run_timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Reports Generated: {len(generated_files)}")
     
-    print(f"\n Current reports saved to: ../output/xero_data/")
+    print(f"\n Current reports saved to: {OUTPUT_DIR}")
     
     # List current files
     if generated_files:
@@ -2191,10 +2198,10 @@ def generate_consolidated_reports(target_date, run_timestamp, fx_reader, skip_ar
             
             import os
             import glob
-            os.makedirs('../output/xero_data', exist_ok=True)
-            os.makedirs('../output/xero_data/archive', exist_ok=True)
+            os.makedirs(OUTPUT_DIR, exist_ok=True)
+            os.makedirs(ARCHIVE_DIR, exist_ok=True)
             
-            existing_files = glob.glob('../output/xero_data/*.xlsx') + glob.glob('../output/xero_data/*.csv')
+            existing_files = glob.glob(os.path.join(OUTPUT_DIR, '*.xlsx')) + glob.glob(os.path.join(OUTPUT_DIR, '*.csv'))
             archived_files = 0
             
             for filepath in existing_files:
@@ -2205,7 +2212,7 @@ def generate_consolidated_reports(target_date, run_timestamp, fx_reader, skip_ar
                 try:
                     timestamp_str = run_timestamp.strftime("%H%M%S")
                     archive_name = f"archive_{timestamp_str}_{filename}"
-                    archive_path = f'../output/xero_data/archive/{archive_name}'
+                    archive_path = os.path.join(ARCHIVE_DIR, archive_name)
                     os.rename(filepath, archive_path)
                     print(f"Archived: {filename} -> {archive_name}")
                     archived_files += 1
@@ -2224,8 +2231,8 @@ def generate_consolidated_reports(target_date, run_timestamp, fx_reader, skip_ar
             
             # Still need to create directories
             import os
-            os.makedirs('../output/xero_data', exist_ok=True)
-            os.makedirs('../output/xero_data/archive', exist_ok=True)
+            os.makedirs(OUTPUT_DIR, exist_ok=True)
+            os.makedirs(ARCHIVE_DIR, exist_ok=True)
         
         # Collect data from all companies
         consolidated_data = {
@@ -2429,7 +2436,7 @@ def generate_consolidated_excel_files(consolidated_data, fx_rates_used, target_d
         try:
             # Create filename
             filename = create_archive_filename(f'{report_type}_CONSOLIDATED', target_date, run_timestamp, 'CONS')
-            filepath = f'../output/xero_data/{filename}'
+            filepath = os.path.join(OUTPUT_DIR, filename)
             
             # Use the same formatting function as native reports
             sheet_name = create_sheet_name(report_type, target_date, 'CONS', is_consolidated=True)
@@ -2452,7 +2459,7 @@ def generate_consolidated_excel_files(consolidated_data, fx_rates_used, target_d
         except Exception as e:
             print(f"   ❌ Error generating {report_type}: {e}")
     
-    print(f"📊 Consolidated reports saved to: ../output/xero_data/")
+    print(f"📊 Consolidated reports saved to: {OUTPUT_DIR}")
 
 def generate_reports_all_companies_native(target_date, run_timestamp, total_mode='none', target_company=None, fx_reader=None):
     """Generate multi-sheet reports with one sheet per company (or single entity if specified)"""
@@ -2503,10 +2510,10 @@ def generate_reports_all_companies_native(target_date, run_timestamp, total_mode
         
         import os
         import glob
-        os.makedirs('../output/xero_data', exist_ok=True)
-        os.makedirs('../output/xero_data/archive', exist_ok=True)
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        os.makedirs(ARCHIVE_DIR, exist_ok=True)
         
-        existing_files = glob.glob('../output/xero_data/*.xlsx') + glob.glob('../output/xero_data/*.csv')
+        existing_files = glob.glob(os.path.join(OUTPUT_DIR, '*.xlsx')) + glob.glob(os.path.join(OUTPUT_DIR, '*.csv'))
         archived_old_files = 0
         
         for filepath in existing_files:
@@ -2517,7 +2524,7 @@ def generate_reports_all_companies_native(target_date, run_timestamp, total_mode
             try:
                 timestamp_str = run_timestamp.strftime("%H%M%S")
                 archive_name = f"archive_{timestamp_str}_{filename}"
-                archive_path = f'../output/xero_data/archive/{archive_name}'
+                archive_path = os.path.join(ARCHIVE_DIR, archive_name)
                 os.rename(filepath, archive_path)
                 print(f"Archived: {filename} -> {archive_name}")
                 archived_old_files += 1
@@ -2625,7 +2632,7 @@ def generate_reports_all_companies_native(target_date, run_timestamp, total_mode
         for report_type, data_dict, data_format in report_types:
             if data_dict:  # Only create file if we have data
                 filename = create_archive_filename(report_type, target_date, run_timestamp)
-                filepath = f'../output/xero_data/{filename}'
+                filepath = os.path.join(OUTPUT_DIR, filename)
                 
                 print(f"   📄 Creating {report_type}...")
                 
@@ -2655,7 +2662,7 @@ def generate_reports_all_companies_native(target_date, run_timestamp, total_mode
         
         # Show final file list
         if generated_files:
-            print(f"\n📁 Final reports in ../output/xero_data/:")
+            print(f"\n📁 Final reports in {OUTPUT_DIR}:")
             for filename in generated_files:
                 print(f"   📄 {filename}")
         

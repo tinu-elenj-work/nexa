@@ -15,60 +15,70 @@ The system performs bidirectional data matching, financial analysis, and automat
 
 ### Setup
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# IMPORTANT: The system uses an externally managed environment (PEP 668)
+# Always check for and use the existing virtual environment
+
+# Check if virtual environment exists
+ls -la | grep -E "venv|\.venv|env"
+
+# If venv exists, use it for all Python commands
+# If venv doesn't exist, create it first:
+python3 -m venv venv
+
+# Install dependencies using the virtual environment
+venv/bin/pip install -r requirements.txt
 
 # Setup configuration (first time only)
 cp config/config.template.py config/config.py
 # Edit config/config.py with actual credentials
 
 # Setup Xero OAuth2 authentication
-python src/xero_oauth_server.py
+venv/bin/python src/xero_oauth_server.py
 ```
 
 ### Main Operations
 ```bash
 # Run project mapping analysis (primary application)
-python src/project_mapper_enhanced.py --api --month "August 2025"
+venv/bin/python src/project_mapper_enhanced.py --api --month "August 2025"
 
 # Employee-specific analysis
-python src/project_mapper_enhanced.py --api --month "August 2025" --employee "John Smith"
+venv/bin/python src/project_mapper_enhanced.py --api --month "August 2025" --employee "John Smith"
 
 # Debug mode (no Excel output)
-python src/project_mapper_enhanced.py --api --month "August 2025" --debug
+venv/bin/python src/project_mapper_enhanced.py --api --month "August 2025" --debug
 
 # Extract Xero financial reports
-python src/get_xero_reports.py "June 2025"
-python src/get_xero_reports.py "2025-06-30"
-python src/get_xero_reports.py  # Uses today's date
+venv/bin/python src/get_xero_reports.py "June 2025"
+venv/bin/python src/get_xero_reports.py "2025-06-30"
+venv/bin/python src/get_xero_reports.py  # Uses today's date
 
-# Extract timesheet data
-python src/timesheet_extractor.py
+# Extract timesheet data (with date range)
+venv/bin/python src/timesheet_extractor.py --start-date 2025-03-01 --end-date 2026-01-31
 
 # Archive old ElapseIT data
-python src/archive_elapseit_data.py
+venv/bin/python src/archive_elapseit_data.py
 
 # Extract Vision database data
-python src/vision_data_extractor.py --mask
-python src/vision_data_extractor.py --no-mask  # Extract without masking
+venv/bin/python src/vision_data_extractor.py --mask
+venv/bin/python src/vision_data_extractor.py --no-mask  # Extract without masking
 
 # Extract Vision data with enhanced configuration
-python src/extract_vision_data_enhanced.py --mask
+venv/bin/python src/extract_vision_data_enhanced.py --mask
 ```
 
 ### Testing
 ```bash
 # Run all tests
-python run_tests.py
+venv/bin/python run_tests.py
 
 # Run with coverage
-python run_tests.py --coverage
+venv/bin/python run_tests.py --coverage
 
 # Run specific test file
-python run_tests.py --specific test_api_clients.py
+venv/bin/python run_tests.py --specific test_api_clients.py
 
 # Individual test with pytest
-pytest tests/test_elapseit_api_client.py -v
+venv/bin/pytest tests/test_elapseit_api_client.py -v
 ```
 
 ## Architecture Overview
@@ -180,7 +190,7 @@ line_color = '#DC2626'
 
 Test color consistency:
 ```bash
-python src/unit_testing/test_color_consistency.py
+venv/bin/python src/unit_testing/test_color_consistency.py
 ```
 
 ## Data Analysis Guidelines
