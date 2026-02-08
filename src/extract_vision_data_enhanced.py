@@ -488,25 +488,68 @@ def detect_new_tables():
     try:
         from vision_db_client import create_vision_client
         client = create_vision_client()
-        
+
         if not client.test_connection():
             print("[ERROR] Failed to connect to Vision database")
             return []
-        
+
         # Get all tables from database
         all_tables = client.get_table_list()
-        
+
         # Find new tables (not in current extraction list and not excluded)
         new_tables = []
         for table in all_tables:
             if table not in CURRENT_EXTRACTED_TABLES and table not in EXCLUDED_TABLES:
                 new_tables.append(table)
-        
+
         return new_tables, all_tables
-        
+
     except Exception as e:
         print(f"[ERROR] Error detecting new tables: {e}")
         return [], []
+
+def build_column_metadata(client, tables_data):
+    """Build column metadata to flag computed/joined columns per table."""
+    metadata_rows = []
+
+    # Get database columns for each table
+    db_columns_map = {}
+    for table_name in tables_data.keys():
+        try:
+            schema_df = client.get_table_schema(table_name)
+            if not schema_df.empty:
+                db_columns_map[table_name] = set(schema_df["column_name"].tolist())
+            else:
+                db_columns_map[table_name] = set()
+        except Exception:
+            db_columns_map[table_name] = set()
+
+    for table_name, df in tables_data.items():
+        db_columns = db_columns_map.get(table_name, set())
+        export_columns = list(df.columns)
+
+        for col in export_columns:
+            is_in_db = col in db_columns
+            metadata_rows.append({
+                "table": table_name,
+                "column": col,
+                "is_in_db": is_in_db,
+                "is_computed": not is_in_db,
+                "should_import": is_in_db
+            })
+
+        # Include database columns that are missing in export
+        missing_columns = db_columns - set(export_columns)
+        for col in sorted(missing_columns):
+            metadata_rows.append({
+                "table": table_name,
+                "column": col,
+                "is_in_db": True,
+                "is_computed": False,
+                "should_import": True
+            })
+
+    return pd.DataFrame(metadata_rows)
 
 def extract_vision_data_enhanced(simulation_id=None, output_filename=None, mask_data=False, include_new_tables=True):
     """
@@ -620,10 +663,38 @@ def extract_vision_data_enhanced(simulation_id=None, output_filename=None, mask_
         if mask_data:
             print("\n[MASK] Applying data masking...")
             tables_data = apply_data_masking(tables_data)
-        
+
+        # Build column metadata for import guidance
+        print("\n[DATA] Building column metadata...")
+        column_metadata_df = build_column_metadata(client, tables_data)
+
+        # Create extraction metadata
+        extraction_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        extraction_metadata = pd.DataFrame([
+            {"Property": "Extraction Date/Time", "Value": extraction_timestamp},
+            {"Property": "Source", "Value": "Vision Database"},
+            {"Property": "Simulation ID", "Value": simulation_id},
+            {"Property": "Data Masking", "Value": "Enabled" if mask_data else "Disabled"},
+            {"Property": "Total Tables", "Value": len(tables_data)},
+            {"Property": "Total Records", "Value": sum(len(df) for df in tables_data.values())},
+            {"Property": "Output File", "Value": os.path.basename(output_filename)}
+        ])
+
         # Create Excel file with multiple sheets
         print("\n[DATA] Creating Excel file...")
         with pd.ExcelWriter(output_filename, engine="openpyxl") as writer:
+            # Write extraction metadata first
+            extraction_metadata.to_excel(writer, sheet_name="Extraction_Metadata", index=False)
+            worksheet = writer.sheets["Extraction_Metadata"]
+            format_excel_sheet(worksheet, extraction_metadata)
+            print("   [OK] Created 'Extraction_Metadata' sheet with run information")
+
+            # Write column metadata second
+            if not column_metadata_df.empty:
+                column_metadata_df.to_excel(writer, sheet_name="column_metadata", index=False)
+                worksheet = writer.sheets["column_metadata"]
+                format_excel_sheet(worksheet, column_metadata_df)
+                print("   [OK] Created 'column_metadata' sheet with import indicators")
             
             for table_name, df in tables_data.items():
                 if not df.empty:

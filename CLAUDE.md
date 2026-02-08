@@ -59,11 +59,8 @@ venv/bin/python src/timesheet_extractor.py --start-date 2025-03-01 --end-date 20
 venv/bin/python src/archive_elapseit_data.py
 
 # Extract Vision database data
-venv/bin/python src/vision_data_extractor.py --mask
-venv/bin/python src/vision_data_extractor.py --no-mask  # Extract without masking
-
-# Extract Vision data with enhanced configuration
 venv/bin/python src/extract_vision_data_enhanced.py --mask
+venv/bin/python src/extract_vision_data_enhanced.py  # Extract without masking
 ```
 
 ### Testing
