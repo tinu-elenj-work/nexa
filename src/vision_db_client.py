@@ -209,7 +209,7 @@ class VisionDBClient:
             pd.DataFrame: Employee data
         """
         query = """
-        SELECT 
+        SELECT
             id,
             simulation_id,
             original_id,
@@ -222,16 +222,15 @@ class VisionDBClient:
             end_date,
             created_at,
             updated_at,
-            deleted_at,
-            promoted_at
+            deleted_at
         FROM employees
         """
-        
+
         params = []
         if simulation_id is not None:
             query += " WHERE simulation_id = %s"
             params.append(simulation_id)
-        
+
         query += " ORDER BY first_name, last_name"
         
         return self.execute_query(query, params)
@@ -274,7 +273,7 @@ class VisionDBClient:
             pd.DataFrame: Client data
         """
         query = """
-        SELECT 
+        SELECT
             c.id,
             c.name,
             c.office_id,
@@ -283,20 +282,19 @@ class VisionDBClient:
             c.created_at,
             c.updated_at,
             c.deleted_at,
-            c.promoted_at,
+            c.country_id,
             o.name as office_name,
-            o.country,
-            o.location
+            o.country
         FROM clients c
-        LEFT JOIN office o ON c.office_id = o.id
+        LEFT JOIN offices o ON c.office_id = o.id
         """
-        
+
         params = []
         if simulation_id is not None:
             query += " WHERE c.simulation_id = %s"
             params.append(simulation_id)
-        
-        query += " ORDER BY name"
+
+        query += " ORDER BY c.name"
         
         return self.execute_query(query, params)
     
@@ -362,19 +360,16 @@ class VisionDBClient:
             pd.DataFrame: Confidence data
         """
         query = """
-        SELECT 
+        SELECT
             id,
             simulation_id,
             original_id,
             name,
-            numerator,
-            denominator,
-            pre_leave_value,
             factor,
+            description,
             created_at,
             updated_at,
-            deleted_at,
-            promoted_at
+            deleted_at
         FROM confidences
         """
         
@@ -398,17 +393,16 @@ class VisionDBClient:
             pd.DataFrame: Calendar data
         """
         query = """
-        SELECT 
+        SELECT
             id,
             simulation_id,
             original_id,
             name,
-            start_date,
-            end_date,
+            country,
+            description,
             created_at,
             updated_at,
-            deleted_at,
-            promoted_at
+            deleted_at
         FROM calendars
         """
         
@@ -432,19 +426,19 @@ class VisionDBClient:
             pd.DataFrame: Calendar holidays data
         """
         query = """
-        SELECT 
+        SELECT
             h.*,
             c.name as calendar_name
         FROM calendar_holidays h
         LEFT JOIN calendars c ON h.calendar_id = c.id
         """
-        
+
         params = []
         if simulation_id is not None:
             query += " WHERE h.simulation_id = %s"
             params.append(simulation_id)
-        
-        query += " ORDER BY h.date, c.name"
+
+        query += " ORDER BY h.holiday_date, c.name"
         
         return self.execute_query(query, params)
     
@@ -459,18 +453,17 @@ class VisionDBClient:
             pd.DataFrame: Currency data
         """
         query = """
-        SELECT 
+        SELECT
             id,
             code,
             name,
             symbol,
-            is_active,
+            color,
             created_at,
             updated_at,
             deleted_at,
             simulation_id,
-            original_id,
-            promoted_at
+            original_id
         FROM currencies
         """
         
@@ -494,7 +487,7 @@ class VisionDBClient:
             pd.DataFrame: Exchange rates data
         """
         query = """
-        SELECT 
+        SELECT
             er.*,
             fc.code as from_currency_code,
             fc.name as from_currency_name,
@@ -504,41 +497,41 @@ class VisionDBClient:
         LEFT JOIN currencies fc ON er.from_currency_id = fc.id
         LEFT JOIN currencies tc ON er.to_currency_id = tc.id
         """
-        
+
         params = []
         if simulation_id is not None:
             query += " WHERE er.simulation_id = %s"
             params.append(simulation_id)
-        
-        query += " ORDER BY er.date DESC, fc.code, tc.code"
+
+        query += " ORDER BY fc.code, tc.code"
         
         return self.execute_query(query, params)
     
-    def get_office(self, simulation_id: Optional[int] = 28) -> pd.DataFrame:
+    def get_offices(self, simulation_id: Optional[int] = 28) -> pd.DataFrame:
         """
         Get office data from Vision database.
-        
+
         Args:
             simulation_id: Simulation ID to filter by (default: 28)
-        
+
         Returns:
             pd.DataFrame: Office data
         """
         query = """
-        SELECT 
+        SELECT
             o.*,
             c.name as calendar_name
-        FROM office o
+        FROM offices o
         LEFT JOIN calendars c ON o.calendar_id = c.id
         """
-        
+
         params = []
         if simulation_id is not None:
             query += " WHERE o.simulation_id = %s"
             params.append(simulation_id)
-        
+
         query += " ORDER BY o.name"
-        
+
         return self.execute_query(query, params)
     
     def get_salaries(self, simulation_id: Optional[int] = 28) -> pd.DataFrame:
@@ -575,6 +568,28 @@ class VisionDBClient:
         
         return self.execute_query(query, params)
     
+    def get_table_all(self, table_name: str, simulation_id: Optional[int] = None) -> pd.DataFrame:
+        """
+        Get all data from a table, optionally filtered by simulation_id.
+
+        Args:
+            table_name: Name of the table
+            simulation_id: Optional simulation ID filter (only applied if column exists)
+
+        Returns:
+            pd.DataFrame: Table data
+        """
+        # Check if table has simulation_id column
+        schema = self.get_table_schema(table_name)
+        has_sim_id = not schema.empty and 'simulation_id' in schema['column_name'].values
+
+        if has_sim_id and simulation_id is not None:
+            query = f"SELECT * FROM {table_name} WHERE simulation_id = %s OR simulation_id IS NULL"
+            return self.execute_query(query, [simulation_id])
+        else:
+            query = f"SELECT * FROM {table_name}"
+            return self.execute_query(query)
+
     def get_table_sample(self, table_name: str, limit: int = 10) -> pd.DataFrame:
         """
         Get a sample of data from any table.
@@ -589,46 +604,37 @@ class VisionDBClient:
         query = f"SELECT * FROM {table_name} LIMIT %s"
         return self.execute_query(query, [limit])
     
-    def get_simulation(self, simulation_id: Optional[int] = 28) -> pd.DataFrame:
+    def get_simulations(self, simulation_id: Optional[int] = 28) -> pd.DataFrame:
         """
         Get simulation data from Vision database.
-        
+
         Args:
             simulation_id: Simulation ID to filter by (default: 28)
-        
+
         Returns:
             pd.DataFrame: Simulation data
         """
         query = """
-        SELECT 
+        SELECT
             id,
             name,
-            start_date,
-            end_date,
-            projection,
-            is_saved,
-            created_at,
-            updated_at,
-            deleted_at,
-            user_account_id,
             description,
             is_promoted,
             promoted_at,
-            promoted_to_main,
-            is_auto_preserved,
-            preserved_at,
-            preserved_from_main_version,
-            parent_simulation_id
-        FROM simulation
+            created_by_user_id,
+            created_at,
+            updated_at,
+            deleted_at
+        FROM simulations
         """
-        
+
         params = []
         if simulation_id is not None:
             query += " WHERE id = %s"
             params.append(simulation_id)
-        
+
         query += " ORDER BY created_at DESC"
-        
+
         return self.execute_query(query, params)
     
     def get_titles(self, simulation_id: Optional[int] = 28) -> pd.DataFrame:
@@ -642,14 +648,13 @@ class VisionDBClient:
             pd.DataFrame: Titles data
         """
         query = """
-        SELECT 
+        SELECT
             id,
             simulation_id,
             original_id,
             name,
             description,
             "order",
-            promoted_at,
             created_at,
             updated_at,
             deleted_at
@@ -668,11 +673,11 @@ class VisionDBClient:
 
 # Configuration for Vision database connection
 VISION_DB_CONFIG = {
-    'host': 'es-estimator-prod.cr4ky28gqfse.af-south-1.rds.amazonaws.com',
+    'host': 'prod-vision-db.cr4ky28gqfse.af-south-1.rds.amazonaws.com',
     'port': 5432,
-    'database': 'es_dashboard',  # Vision data is in es_dashboard database
+    'database': 'postgres',
     'user': 'readonly_user',
-    'password': 'zxL%rZiergbpRv1'
+    'password': '8a7sXIa[8}Io&wFDOZ!-H%Qq[DFWHcyr'
 }
 
 

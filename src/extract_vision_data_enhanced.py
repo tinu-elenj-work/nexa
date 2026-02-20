@@ -31,14 +31,12 @@ except ImportError:
 CURRENT_EXTRACTED_TABLES = [
     "allocations", "employees", "projects", "clients", "confidences",
     "calendars", "calendar_holidays", "currencies", "exchange_rates",
-    "office", "salaries", "simulation", "titles"
+    "offices", "salaries", "simulations", "titles"
 ]
 
 # Tables to exclude from extraction
 EXCLUDED_TABLES = [
     "alembic_version",  # Database migration version - not business data
-    "simulation_approvals",  # Empty table (0 rows)
-    "audit_logs",  # Audit trail data - excluded per user request
     "user_account",  # User account information - excluded per user request
 ]
 
@@ -417,7 +415,7 @@ def apply_consistent_masking(tables_data, employee_mapping, client_mapping, proj
         print(f"   [OK] Masked {len(df)} salary records with consistent names")
     
     # 6. Copy other tables without masking (they don't contain sensitive data)
-    other_tables = ["confidences", "calendars", "calendar_holidays", "currencies", "exchange_rates", "office", "simulation", "titles"]
+    other_tables = ["confidences", "calendars", "calendar_holidays", "currencies", "exchange_rates", "offices", "simulations", "titles"]
     for table_name in other_tables:
         if table_name in tables_data:
             print(f"\n[LIST] Copying '{table_name}' table (no masking needed)...")
@@ -637,9 +635,9 @@ def extract_vision_data_enhanced(simulation_id=None, output_filename=None, mask_
             "calendar_holidays": lambda: client.get_calendar_holidays(simulation_id=simulation_id),
             "currencies": lambda: client.get_currencies(simulation_id=simulation_id),
             "exchange_rates": lambda: client.get_exchange_rates(simulation_id=simulation_id),
-            "office": lambda: client.get_office(simulation_id=simulation_id),
+            "offices": lambda: client.get_offices(simulation_id=simulation_id),
             "salaries": lambda: client.get_salaries(simulation_id=simulation_id),
-            "simulation": lambda: client.get_simulation(simulation_id=simulation_id),
+            "simulations": lambda: client.get_simulations(simulation_id=simulation_id),
             "titles": lambda: client.get_titles(simulation_id=simulation_id),
         }
         
@@ -657,7 +655,15 @@ def extract_vision_data_enhanced(simulation_id=None, output_filename=None, mask_
                     print(f"   [ERROR] Error extracting {table_name}: {e}")
                     tables_data[table_name] = pd.DataFrame()  # Empty DataFrame as fallback
             else:
-                print(f"[WARNING]  No extraction method defined for {table_name} - skipping")
+                # Generic extraction for tables without a dedicated method
+                print(f"[LIST] Extracting {table_name} (generic)...")
+                try:
+                    df = client.get_table_all(table_name, simulation_id=simulation_id)
+                    tables_data[table_name] = df
+                    print(f"   [OK] Retrieved {len(df)} {table_name} records")
+                except Exception as e:
+                    print(f"   [ERROR] Error extracting {table_name}: {e}")
+                    tables_data[table_name] = pd.DataFrame()
         
         # Apply data masking if requested
         if mask_data:
