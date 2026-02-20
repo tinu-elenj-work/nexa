@@ -272,6 +272,6 @@ output/
 ## Repository Context
 
 - **Main branch**: `main`
-- **Git hosting**: Bitbucket (https://bitbucket.org/elenj/workspace/projects/ESBUS/nexa)
+- **Git hosting**: GitHub (git@github.com:tinu-elenj-work/nexa.git)
 - **Python version**: 3.8+ (tested with 3.13)
 - **Development OS**: Windows (WSL2) - note for path handling
